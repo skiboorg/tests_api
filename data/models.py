@@ -10,3 +10,6 @@ class TestResult(models.Model):
     test1 = models.IntegerField(default=0, null=True)
     test2 = models.IntegerField(default=0, null=True)
     test3 = models.IntegerField(default=0, null=True)
+
+    def __str__(self):
+        return f'{self.age} {self.gender} {self.speciality} {self.city} {self.test1} {self.test2} {self.test3} '
