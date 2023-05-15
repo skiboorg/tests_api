@@ -2,7 +2,8 @@ djangorestframework
 django-cors-headers
 scikit-learn
 matplotlib
-
-
+pandas
+seaborn
+radar_chart
 
 

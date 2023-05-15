@@ -1,3 +1,4 @@
+from django.db.models import Count
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -8,38 +9,20 @@ from rest_framework import generics, viewsets, status
 import numpy as np
 from sklearn.cluster import KMeans
 import matplotlib.pyplot as plt
-
+import pandas as pd
+from sklearn.preprocessing import MinMaxScaler
+from scipy.cluster.hierarchy import dendrogram, linkage
+import seaborn as sns
+from sklearn.preprocessing import StandardScaler
+from scipy.cluster import hierarchy
+from scipy.spatial.distance import pdist
+from sklearn.preprocessing import LabelEncoder
 class TestResultViewSet(viewsets.ModelViewSet):
     queryset = TestResult.objects.all()
     serializer_class = TestResultSerializer
     lookup_field = 'session_id'
 
 
-def create_graph(user_data,categories, filename):
-    from sklearn.preprocessing import LabelEncoder
-    le = LabelEncoder()
-    user_data[:, 1] = le.fit_transform(user_data[:, 1])
-    user_data[:, 2] = le.fit_transform(user_data[:, 2])
-    user_data[:, 3] = le.fit_transform(user_data[:, 3])
-
-    kmeans = KMeans(n_clusters=3, random_state=0).fit(user_data)
-    labels = kmeans.labels_
-    cluster_centers = kmeans.cluster_centers_
-
-
-    for i in range(len(cluster_centers)):
-        values = cluster_centers[i]
-        values = np.append(values, values[0])
-        angles = np.linspace(0, 2 * np.pi, len(categories), endpoint=False)
-        angles = np.append(angles, angles[0])
-        plt.polar(angles, values, 'o-', linewidth=2)
-        plt.fill(angles, values, alpha=0.25)
-    # plt.legend(['Cluster 1', 'Cluster 2', 'Cluster 3'], loc='upper right', bbox_to_anchor=(1.5, 1))
-    plt.xticks(angles[:-1], categories)
-    plt.yticks(np.arange(0, 4, 0.5))
-
-    print(cluster_centers)
-    plt.savefig(f'media/{filename}.png')
 
 class CalcTestResult(APIView):
     def get(self, request):
@@ -84,111 +67,106 @@ class CalcTestResult(APIView):
         }, status=200)
 class CalcTest(APIView):
     def get(self,request):
-
-
-
-        user_data = np.array(TestResult.objects.values_list('age', 'gender', 'speciality', 'city', 'test1', 'test2', 'test3'))
-        categories = ['Возраст', 'Пол', 'Специальность', 'Город', 'Результаты теста1', 'Результаты теста2',
-                      'Результаты теста3']
-        filename='total'
-        create_graph(user_data,categories,filename)
-
-        user_data = np.array(
-            TestResult.objects.values_list('age', 'gender', 'speciality', 'city', 'test1',))
-        categories = ['Возраст', 'Пол', 'Специальность', 'Город', 'Результаты теста1']
-        filename = 'test1'
-        create_graph(user_data, categories, filename)
-
-        user_data = np.array(
-            TestResult.objects.values_list('age', 'gender', 'speciality', 'city', 'test2', ))
-        categories = ['Возраст', 'Пол', 'Специальность', 'Город', 'Результаты теста2']
-        filename = 'test2'
-        create_graph(user_data, categories, filename)
-
-        user_data = np.array(
-            TestResult.objects.values_list('age', 'gender', 'speciality', 'city', 'test3', ))
-        categories = ['Возраст', 'Пол', 'Специальность', 'Город', 'Результаты теста3']
-        filename = 'test3'
-        create_graph(user_data, categories, filename)
-
-
-
-
-        # print(user_data)
+        from scipy.cluster.hierarchy import dendrogram
+        # ages = np.array(TestResult.objects.values_list('age', flat=True))
+        # genders = np.array(TestResult.objects.values_list('gender', flat=True))
+        # specialties = np.array(TestResult.objects.values_list('speciality', flat=True))
+        # cities = np.array(TestResult.objects.values_list('city', flat=True))
+        # test_results = np.array(TestResult.objects.values_list('test1', flat=True))
         #
-        # X = list(user_data)
-        # distortions = []
-        # K = range(1, len(user_data))
-        # for i in K:
-        #     kmeans = KMeans(n_clusters=i, init='k-means++', n_init=10, max_iter=300, random_state=0)
+        # # Построить график каменистой осыпи
+        # X = np.column_stack((ages, test_results))
+        # wcss = []
+        # for i in range(1, 11):
+        #     kmeans = KMeans(n_clusters=i, init='k-means++', max_iter=300, n_init=10, random_state=0)
         #     kmeans.fit(X)
-        #     distortions.append(kmeans.inertia_)
+        #     wcss.append(kmeans.inertia_)
+        # plt.plot(range(1, 11), wcss)
+        # plt.title('Каменистая осыпь')
+        # plt.xlabel('Количество кластеров')
+        # plt.ylabel('WCSS')
+        # plt.savefig('stone.png')
         #
-        # # Определяем количество кластеров как точку перегиба на графике "Каменистой осыпи"
-        # num_clusters = np.argmin(np.diff(distortions)) + 1
+        # data = {
+        #     'age': ages,
+        #     'gender': genders,
+        #     'speciality': specialties,
+        #     'city': cities,
+        #     'test1': test_results
+        # }
+        # df = pd.DataFrame(data)
+        # cols = df.columns.tolist()
+        # cols = cols[-1:] + cols[:-1]
+        # df = df[cols]
+        # sns.set(style="ticks")
+        # sns.pairplot(df, hue="test1", diag_kind="kde")
+        # plt.savefig('spider.png')
         #
-        # print('num_clusters',num_clusters)
-        #
-        # # Отображение графика метода локтя
-        # plt.figure(figsize=(16, 8))
-        # plt.plot(K, distortions, 'bx-')
-        # plt.xlabel('Кластеров')
-        # plt.ylabel('Расхождение')
-        #
-        #
-        #
-        # plt.savefig('my_plot.png')
-        #
-        # # Кластеризуем данные с использованием метода k-средних
-        # kmeans = KMeans(n_clusters=num_clusters, init='k-means++', n_init=10, max_iter=300, random_state=0)
-        # kmeans.fit(X)
-        #
-        # # Определяем средние значения переменных в каждом кластере
-        # cluster_centers = kmeans.cluster_centers_
-        #
-        # # Выводим средние значения переменных в каждом кластере
-        # for i in range(num_clusters):
-        #     print("Кластер ", i + 1, " средние значения:")
-        #     print("Возраст: ", cluster_centers[i][0])
-        #     print("Пол: ", cluster_centers[i][1])
-        #     print("Test 1: ", cluster_centers[i][2])
-        #     print("Test 2: ", cluster_centers[i][3])
-        #     print("Test 3: ", cluster_centers[i][4])
+        # Z = linkage(X, 'ward')
+        # plt.figure(figsize=(10, 7))
+        # plt.title('Дендрограмма')
+        # plt.xlabel('Номер записи')
+        # plt.ylabel('Расстояние')
+        # dendrogram(Z, leaf_rotation=90., leaf_font_size=8.)
+        # plt.savefig('dend.png')
 
+        data = TestResult.objects.values('age', 'gender', 'speciality', 'city', 'test1')
+        df = pd.DataFrame.from_records(data)
 
-        # # определение оптимального количества кластеров методом локтя
-        # distortions = []
-        # K = range(1, len(user_data))
-        # for k in K:
-        #     kmeanModel = KMeans(n_clusters=k)
-        #     kmeanModel.fit(user_data)
-        #     distortions.append(kmeanModel.inertia_)
-        # print(distortions)
-        # plt.figure(figsize=(16, 8))
-        # plt.plot(K, distortions, 'bx-')
-        # plt.xlabel('Кол-во кластеров')
-        # plt.ylabel('Расхождение')
+        # Предварительная обработка данных
+        # Кодируем категориальные признаки в числовые
+        label_encoder = LabelEncoder()
+        df['gender'] = label_encoder.fit_transform(df['gender'])
+        df['speciality'] = label_encoder.fit_transform(df['speciality'])
+        df['city'] = label_encoder.fit_transform(df['city'])
 
-        # K = range(1, len(user_data))
-        # distortions = []
-        # # Вычисление и добавление искажений для каждого K
-        # for k in K:
-        #     kmeanModel = KMeans(n_clusters=k)
-        #     kmeanModel.fit(user_data)
-        #     distortions.append(kmeanModel.inertia_)
-        #
-        # # Отображение графика метода локтя
-        # plt.figure(figsize=(16, 8))
-        # plt.plot(K, distortions, 'bx-')
-        # plt.xlabel('Кластеров')
-        # plt.ylabel('Расхождение')
-        #
-        #
-        #
-        # plt.savefig('my_plot.png')
-        # optimal_k = np.argmin(distortions) + 1
-        # print(f'Оптимальное количество кластеров: {optimal_k}')
+        # Масштабирование данных
+        scaler = StandardScaler()
+        scaled_data = scaler.fit_transform(df)
 
+        # Применение алгоритма KMeans для кластеризации
+        kmeans = KMeans(n_clusters=3)  # Замените 3 на желаемое количество кластеров
+        kmeans.fit(scaled_data)
+
+        # Построение графика каменистой осыпи
+        distortions = []
+        for i in range(1, 11):
+            kmeans = KMeans(n_clusters=i, random_state=0)
+            kmeans.fit(scaled_data)
+            distortions.append(kmeans.inertia_)
+
+        plt.plot(range(1, 11), distortions, marker='o')
+        plt.xlabel('Количество кластеров')
+        plt.ylabel('Искажение')
+        plt.title('График каменистой осыпи')
+        plt.savefig('media/stone.png')
+
+        # Построение паутинообразной диаграммы
+        cluster_centers = scaler.inverse_transform(kmeans.cluster_centers_)
+        feature_labels = ['возраст', 'пол', 'Специальность', 'Город', 'Результаты_теста']
+
+        fig, ax = plt.subplots(figsize=(8, 8))
+        for i, cluster_center in enumerate(cluster_centers):
+            angles = [n / float(len(feature_labels)) * 2 * 3.1415 for n in range(len(feature_labels))]
+            angles += angles[:1]
+            values = list(cluster_center)
+            values += values[:1]
+            ax.plot(angles, values, marker='o', linestyle='-', linewidth=2, label=f'Кластер {i + 1}')
+
+        ax.set_xticks(angles[:-1])
+        ax.set_xticklabels(feature_labels)
+        ax.yaxis.grid(True)
+        ax.legend()
+        plt.title('Паутинообразная диаграмма')
+        plt.savefig('media/spider.png')
+
+        Z = linkage(scaled_data, method='ward')
+        plt.figure(figsize=(10, 10))
+        plt.title('Дендрограмма')
+        plt.xlabel('Объекты')
+        plt.ylabel('Расстояние')
+        dendrogram(Z, leaf_rotation=90., leaf_font_size=8.)
+        plt.savefig('media/dend.png')
 
 
         return Response(status=200)
