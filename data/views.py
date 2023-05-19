@@ -17,6 +17,8 @@ from sklearn.preprocessing import StandardScaler
 from scipy.cluster import hierarchy
 from scipy.spatial.distance import pdist
 from sklearn.preprocessing import LabelEncoder
+import os
+
 class TestResultViewSet(viewsets.ModelViewSet):
     queryset = TestResult.objects.all()
     serializer_class = TestResultSerializer
@@ -73,11 +75,27 @@ def create_dend(data):
     plt.xlabel('Объекты')
     plt.ylabel('Расстояние')
     dendrogram(Z, leaf_rotation=90., leaf_font_size=8.)
-    plt.savefig('media/3/dend.png')
+    plt.savefig('media/dend.png')
 
+def create_stone(data):
+
+
+    # Построение графика каменистой осыпи
+    distortions = []
+    for i in range(1, 11):
+        kmeans = KMeans(n_clusters=i, random_state=0)
+        kmeans.fit(data)
+        distortions.append(kmeans.inertia_)
+
+    plt.plot(range(1, 11), distortions, marker='o')
+    plt.xlabel('Количество кластеров')
+    plt.ylabel('Искажение')
+    plt.title('График каменистой осыпи')
+    plt.savefig('media/1/stone.png')
 class CalcTest(APIView):
     def get(self,request):
         from scipy.cluster.hierarchy import dendrogram
+
         data = TestResult.objects.values('age', 'gender', 'speciality', 'city', 'test1')
         df = pd.DataFrame.from_records(data)
 
@@ -96,18 +114,9 @@ class CalcTest(APIView):
         kmeans = KMeans(n_clusters=3)  # Замените 3 на желаемое количество кластеров
         kmeans.fit(scaled_data)
 
-        # Построение графика каменистой осыпи
-        distortions = []
-        for i in range(1, 11):
-            kmeans = KMeans(n_clusters=i, random_state=0)
-            kmeans.fit(scaled_data)
-            distortions.append(kmeans.inertia_)
+        create_stone(scaled_data)
 
-        plt.plot(range(1, 11), distortions, marker='o')
-        plt.xlabel('Количество кластеров')
-        plt.ylabel('Искажение')
-        plt.title('График каменистой осыпи')
-        plt.savefig('media/1/stone.png')
+
 
         # Построение паутинообразной диаграммы
         cluster_centers = scaler.inverse_transform(kmeans.cluster_centers_)
