@@ -139,7 +139,7 @@ class CalcTest(APIView):
         plt.xlabel('Количество кластеров')
         plt.ylabel('Искажение')
         plt.title('График каменистой осыпи')
-        plt.savefig('media/stone.png')
+        plt.savefig('media/1/stone.png')
 
         # Построение паутинообразной диаграммы
         cluster_centers = scaler.inverse_transform(kmeans.cluster_centers_)
