@@ -65,51 +65,19 @@ class CalcTestResult(APIView):
             "test3_3": test3_3,
             "test3_4": test3_4,
         }, status=200)
+
+def create_dend(data):
+    Z = linkage(data, method='ward')
+    plt.figure(figsize=(10, 10))
+    plt.title('Дендрограмма')
+    plt.xlabel('Объекты')
+    plt.ylabel('Расстояние')
+    dendrogram(Z, leaf_rotation=90., leaf_font_size=8.)
+    plt.savefig('media/3/dend.png')
+
 class CalcTest(APIView):
     def get(self,request):
         from scipy.cluster.hierarchy import dendrogram
-        # ages = np.array(TestResult.objects.values_list('age', flat=True))
-        # genders = np.array(TestResult.objects.values_list('gender', flat=True))
-        # specialties = np.array(TestResult.objects.values_list('speciality', flat=True))
-        # cities = np.array(TestResult.objects.values_list('city', flat=True))
-        # test_results = np.array(TestResult.objects.values_list('test1', flat=True))
-        #
-        # # Построить график каменистой осыпи
-        # X = np.column_stack((ages, test_results))
-        # wcss = []
-        # for i in range(1, 11):
-        #     kmeans = KMeans(n_clusters=i, init='k-means++', max_iter=300, n_init=10, random_state=0)
-        #     kmeans.fit(X)
-        #     wcss.append(kmeans.inertia_)
-        # plt.plot(range(1, 11), wcss)
-        # plt.title('Каменистая осыпь')
-        # plt.xlabel('Количество кластеров')
-        # plt.ylabel('WCSS')
-        # plt.savefig('stone.png')
-        #
-        # data = {
-        #     'age': ages,
-        #     'gender': genders,
-        #     'speciality': specialties,
-        #     'city': cities,
-        #     'test1': test_results
-        # }
-        # df = pd.DataFrame(data)
-        # cols = df.columns.tolist()
-        # cols = cols[-1:] + cols[:-1]
-        # df = df[cols]
-        # sns.set(style="ticks")
-        # sns.pairplot(df, hue="test1", diag_kind="kde")
-        # plt.savefig('spider.png')
-        #
-        # Z = linkage(X, 'ward')
-        # plt.figure(figsize=(10, 7))
-        # plt.title('Дендрограмма')
-        # plt.xlabel('Номер записи')
-        # plt.ylabel('Расстояние')
-        # dendrogram(Z, leaf_rotation=90., leaf_font_size=8.)
-        # plt.savefig('dend.png')
-
         data = TestResult.objects.values('age', 'gender', 'speciality', 'city', 'test1')
         df = pd.DataFrame.from_records(data)
 
@@ -160,13 +128,7 @@ class CalcTest(APIView):
         plt.title('Паутинообразная диаграмма')
         plt.savefig('media/spider.png')
 
-        Z = linkage(scaled_data, method='ward')
-        plt.figure(figsize=(10, 10))
-        plt.title('Дендрограмма')
-        plt.xlabel('Объекты')
-        plt.ylabel('Расстояние')
-        dendrogram(Z, leaf_rotation=90., leaf_font_size=8.)
-        plt.savefig('media/dend.png')
+        create_dend(scaled_data)
 
 
         return Response(status=200)
